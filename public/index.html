@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PoloTube - Recommandations</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Styles rapides pour la barre de recherche */
+    #search-container {
+      max-width: 900px;
+      margin: 20px auto;
+      display: flex;
+      gap: 10px;
+    }
+    #search-input {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #search-btn {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #0073e6;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+    #search-btn:hover {
+      background-color: #005bb5;
+    }
+    /* Style des vidéos */
+    .video-card {
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Recommandations PoloTube</h1>
+
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Rechercher une vidéo..." />
+    <button id="search-btn">Rechercher</button>
+  </div>
+
+  <div id="videos"></div>
+
+  <script>
+    // Exemple minimal : on récupère les vidéos depuis /api/recommendations (ou script.js)
+    async function loadVideos() {
+      const res = await fetch('/api/recommendations');
+      const videos = await res.json();
+      return videos;
+    }
+
+    function renderVideos(videos) {
+      const videosDiv = document.getElementById('videos');
+      videosDiv.innerHTML = ''; // reset
+      if (videos.length === 0) {
+        videosDiv.innerHTML = '<p>Aucune vidéo trouvée.</p>';
+        return;
+      }
+      videos.forEach(video => {
+        const div = document.createElement('div');
+        div.className = 'video-card';
+        div.innerHTML = `
+          <img src="${video.thumbnail}" alt="${video.title}" width="320" />
+          <h3>${video.title}</h3>
+          <p>Chaîne: ${video.channel}</p>
+        `;
+        div.onclick = () => window.location.href = `/video?id=${video.id}`;
+        videosDiv.appendChild(div);
+      });
+    }
+
+    async function init() {
+      const videos = await loadVideos();
+      renderVideos(videos);
+
+      const input = document.getElementById('search-input');
+      const btn = document.getElementById('search-btn');
+
+      function filterVideos() {
+        const query = input.value.toLowerCase();
+        const filtered = videos.filter(v => v.title.toLowerCase().includes(query));
+        renderVideos(filtered);
+      }
+
+      btn.addEventListener('click', filterVideos);
+      input.addEventListener('keyup', e => {
+        if (e.key === 'Enter') filterVideos();
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

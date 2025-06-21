@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PoloTube - Chaîne YouTube</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .back-btn {
+      cursor: pointer;
+      color: #0073e6;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+    .channel-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .channel-card img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #0073e6;
+    }
+    .channel-info h3 {
+      margin: 0 0 10px 0;
+    }
+    .video-card {
+      cursor: pointer;
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      align-items: center;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
+    .video-card img {
+      width: 160px;
+      height: 90px;
+      object-fit: cover;
+    }
+    .video-info h3 {
+      margin: 0 0 5px 0;
+      font-size: 1rem;
+    }
+    .video-info p {
+      margin: 0;
+      color: #666;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="back-btn" onclick="window.history.back()">← Retour</div>
+    <h1>Chaîne YouTube</h1>
+    <div id="channel-info"></div>
+    <h2>Vidéos de la chaîne</h2>
+    <div id="channel-videos"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const channelId = urlParams.get('id');
+    const channelName = urlParams.get('name');
+
+    if (!channelId && !channelName) {
+      document.body.innerHTML = '<p>ID ou nom de chaîne manquant.</p>';
+    } else {
+      async function fetchChannelData() {
+        let url;
+        if(channelId) {
+          url = `/api/youtube/channel?id=${channelId}`;
+        } else {
+          url = `/api/youtube/channel?name=${encodeURIComponent(channelName)}`;
+        }
+        try {
+          const res = await fetch(url);
+          if(!res.ok) throw new Error('Erreur lors de la récupération des données');
+          const channelData = await res.json();
+
+          if(!channelData || !channelData.title) {
+            document.body.innerHTML = '<p>Chaîne introuvable.</p>';
+            return;
+          }
+
+          const infoDiv = document.getElementById('channel-info');
+          infoDiv.innerHTML = `
+            <div class="channel-card">
+              <img src="${channelData.thumbnail}" alt="${channelData.title}" />
+              <div class="channel-info">
+                <h3>${channelData.title}</h3>
+                <p>${channelData.subscriberCount} abonnés</p>
+                <p>${channelData.description}</p>
+              </div>
+            </div>
+          `;
+
+          const videosDiv = document.getElementById('channel-videos');
+          videosDiv.innerHTML = ''; // Clear avant ajout
+          channelData.videos.forEach(video => {
+            const vidDiv = document.createElement('div');
+            vidDiv.className = 'video-card';
+            vidDiv.innerHTML = `
+              <img src="${video.thumbnail}" alt="${video.title}" />
+              <div class="video-info">
+                <h3>${video.title}</h3>
+                <p>${video.publishedAt}</p>
+              </div>
+            `;
+            vidDiv.onclick = () => window.location.href = `/video?id=${video.id}`;
+            videosDiv.appendChild(vidDiv);
+          });
+        } catch (err) {
+          document.body.innerHTML = `<p>Erreur : ${err.message}</p>`;
+        }
+      }
+
+      fetchChannelData();
+    }
+  </script>
+</body>
+</html>

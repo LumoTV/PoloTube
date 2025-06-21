@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PoloTube - Playlist</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="back-btn" onclick="window.history.back()">← Retour</div>
+    <h1>Playlist</h1>
+    <div id="playlist-info"></div>
+    <h2>Vidéos de la playlist</h2>
+    <div id="playlist-videos"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const playlistId = urlParams.get('id');
+
+    if (!playlistId) {
+      document.body.innerHTML = '<p>ID de playlist manquant.</p>';
+    } else {
+      async function fetchPlaylistData() {
+        // Exemple d’appel API playlist, adapte selon ton backend
+        const res = await fetch(`/api/playlist?id=${playlistId}`);
+        const playlistData = await res.json();
+
+        const infoDiv = document.getElementById('playlist-info');
+        infoDiv.innerHTML = `
+          <div class="playlist-card">
+            <img src="${playlistData.thumbnail}" alt="${playlistData.title}" />
+            <div class="playlist-info">
+              <h3>${playlistData.title}</h3>
+              <p>${playlistData.description}</p>
+            </div>
+          </div>
+        `;
+
+        const videosDiv = document.getElementById('playlist-videos');
+        playlistData.videos.forEach(video => {
+          const vidDiv = document.createElement('div');
+          vidDiv.className = 'video-card';
+          vidDiv.innerHTML = `
+            <img src="${video.thumbnail}" alt="${video.title}" />
+            <div class="video-info">
+              <h3>${video.title}</h3>
+              <p>${video.publishedAt}</p>
+            </div>
+          `;
+          vidDiv.onclick = () => window.location.href = `/video?id=${video.id}`;
+          videosDiv.appendChild(vidDiv);
+        });
+      }
+
+      fetchPlaylistData();
+    }
+  </script>
+</body>
+</html>
