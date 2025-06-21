@@ -77,21 +77,28 @@
     } else {
       async function fetchChannelData() {
         let url;
-        if(channelId) {
+        if (channelId) {
           url = `/api/youtube/channel?id=${channelId}`;
         } else {
           url = `/api/youtube/channel?name=${encodeURIComponent(channelName)}`;
         }
+
         try {
           const res = await fetch(url);
-          if(!res.ok) throw new Error('Erreur lors de la récupération des données');
+          console.log('Requête API →', url, '→ statut:', res.status);
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Statut ${res.status} : ${text}`);
+          }
+
           const channelData = await res.json();
 
-          if(!channelData || !channelData.title) {
+          if (!channelData || !channelData.title) {
             document.body.innerHTML = '<p>Chaîne introuvable.</p>';
             return;
           }
 
+          // Affichage des infos de la chaîne
           const infoDiv = document.getElementById('channel-info');
           infoDiv.innerHTML = `
             <div class="channel-card">
@@ -99,28 +106,34 @@
               <div class="channel-info">
                 <h3>${channelData.title}</h3>
                 <p>${channelData.subscriberCount} abonnés</p>
-                <p>${channelData.description}</p>
+                <p>${channelData.description || ''}</p>
               </div>
             </div>
           `;
 
+          // Affichage des vidéos
           const videosDiv = document.getElementById('channel-videos');
-          videosDiv.innerHTML = ''; // Clear avant ajout
-          channelData.videos.forEach(video => {
-            const vidDiv = document.createElement('div');
-            vidDiv.className = 'video-card';
-            vidDiv.innerHTML = `
-              <img src="${video.thumbnail}" alt="${video.title}" />
-              <div class="video-info">
-                <h3>${video.title}</h3>
-                <p>${video.publishedAt}</p>
-              </div>
-            `;
-            vidDiv.onclick = () => window.location.href = `/video?id=${video.id}`;
-            videosDiv.appendChild(vidDiv);
-          });
+          videosDiv.innerHTML = '';
+          if (Array.isArray(channelData.videos) && channelData.videos.length > 0) {
+            channelData.videos.forEach(video => {
+              const vidDiv = document.createElement('div');
+              vidDiv.className = 'video-card';
+              vidDiv.innerHTML = `
+                <img src="${video.thumbnail}" alt="${video.title}" />
+                <div class="video-info">
+                  <h3>${video.title}</h3>
+                  <p>${video.publishedAt}</p>
+                </div>
+              `;
+              vidDiv.onclick = () => window.location.href = `/video?id=${video.id}`;
+              videosDiv.appendChild(vidDiv);
+            });
+          } else {
+            videosDiv.innerHTML = '<p>Aucune vidéo trouvée pour cette chaîne.</p>';
+          }
         } catch (err) {
-          document.body.innerHTML = `<p>Erreur : ${err.message}</p>`;
+          console.error('Erreur de récupération :', err);
+          document.body.innerHTML = `<p><strong>Erreur :</strong> ${err.message}</p>`;
         }
       }
 
